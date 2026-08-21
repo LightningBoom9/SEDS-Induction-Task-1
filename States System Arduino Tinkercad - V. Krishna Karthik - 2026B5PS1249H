@@ -1,0 +1,199 @@
+// C++ code
+//
+
+#include <LiquidCrystal.h>                 
+LiquidCrystal lcd(4, 3, 10, 11, 12, 13);   // RS, E, D4, D5, D6, D7
+unsigned long previousBlinkTime = 0;       //GLOBALS
+const long blinkInterval = 500;
+bool ledState = false;
+enum ShipState {OPEN_SEA, ANCHOR_DROPPED, STORM, CHARYBDIS, WRECKED};
+ShipState currentState = OPEN_SEA;
+int lastButtonState = HIGH;
+
+unsigned long enterStorm = 0;
+ShipState previousState = OPEN_SEA;
+
+unsigned long enterCharybdis = 0;
+
+
+void setup()
+{
+  Serial.begin(9600); //monitoring the output on serial monitor
+  
+  lcd.begin(16, 2);
+  lcd.setCursor(0, 0);
+  lcd.print("OPEN SEA");
+  
+  pinMode(9, OUTPUT);
+  
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("OPEN SEA");
+  
+  pinMode(8, OUTPUT);
+  pinMode(7, INPUT_PULLUP);
+  pinMode(6, OUTPUT);
+  pinMode(5, INPUT);
+}
+void loop()
+{
+  switch (currentState) {
+   
+     
+    case OPEN_SEA: {                          //OPEN SEA
+    int lightLevel = analogRead(A0);
+    Serial.println(lightLevel);
+    
+    digitalWrite(6, LOW);
+    delayMicroseconds(2);
+    digitalWrite(6, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(6, LOW);
+  
+    long duration = pulseIn(5, HIGH);          // how long the "stopwatch" ran, in microseconds
+    
+    float distanceCm = duration * 0.034 / 2;   // sound has a known speed, so time tells us distance
+    
+    int reading = digitalRead(7);
+    
+    if (distanceCm < 100) {                 //distance from surface less than 100cm
+    currentState = CHARYBDIS;
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("CHARYBDIS");
+    } else if (lightLevel < 1005) {               //light level less than half
+      currentState = STORM;
+      lcd.clear();
+      lcd.setCursor(0,0);
+      lcd.print("STORM");
+    } else if (reading == LOW && lastButtonState == HIGH) {  //buttom pressed
+      currentState = ANCHOR_DROPPED;
+      lcd.clear();
+      lcd.setCursor(0,0);
+      lcd.print("ANCHOR DROPPED");
+      
+    }
+    
+    lastButtonState = reading;
+    Serial.println(reading); //monitoring the output on serial monitor
+      
+    break; 
+    }
+    
+    case STORM: {                              //STORM
+    
+      int reading = digitalRead(7);
+      int lightLevel = analogRead(A0);
+      
+      Serial.println(millis() - enterStorm); //monitoring the output on serial monitor
+      
+      if (previousState != STORM) {
+        enterStorm = millis();
+      }
+      
+      if (millis() - previousBlinkTime >= blinkInterval) { //Blinking the LED
+       previousBlinkTime = millis();
+       ledState = !ledState;
+       digitalWrite(9, ledState);
+      }
+      
+      if (reading == LOW && lastButtonState == HIGH) {  //Button Pressed
+       currentState = ANCHOR_DROPPED;
+       digitalWrite(9, LOW);
+       lcd.clear();
+       lcd.setCursor(0,0);
+       lcd.print("ANCHOR DROPPED");
+      } else if (lightLevel >= 1005) { //Light level more than half
+       currentState = OPEN_SEA;
+       digitalWrite(9, LOW);
+       lcd.clear();
+       lcd.setCursor(0,0);
+       lcd.print("OPEN SEA");
+      } else if (millis() - enterStorm >=5000){  //time spent in state more than 5s
+       currentState = WRECKED;
+       digitalWrite(9, LOW);
+       lcd.clear();
+       lcd.setCursor(0,0);
+       lcd.print("WRECKED");
+      }
+      
+      previousState = currentState;
+      lastButtonState = reading;
+    
+    break;
+    }
+    
+    case CHARYBDIS: {                            //CHARYBDIS
+     
+      digitalWrite(6, LOW);
+      delayMicroseconds(2);
+      digitalWrite(6, HIGH);
+      delayMicroseconds(10);
+      digitalWrite(6, LOW);
+  
+      long duration = pulseIn(5, HIGH);          // how long the "stopwatch" ran, in microseconds
+     
+      float distanceCm = duration * 0.034 / 2;   // sound has a known speed, so time tells us distance
+    
+      Serial.println(millis() - enterCharybdis); //monitoring the output on serial monitor
+      
+      int reading = digitalRead(7);
+      digitalWrite(8, HIGH);
+      
+      if (previousState != CHARYBDIS) {
+       enterCharybdis = millis();
+      }
+      
+      if (reading == LOW && lastButtonState == HIGH) {   //button pressed
+       currentState = ANCHOR_DROPPED;
+       digitalWrite(8, LOW);
+       lcd.clear();
+       lcd.setCursor(0,0); 
+       lcd.print("ANCHOR DROPPED");
+      } else if (distanceCm >= 100) {   //distance from surface more than 100cm
+        currentState = OPEN_SEA;
+        digitalWrite(8, LOW);
+        lcd.clear();
+        lcd.setCursor(0,0);
+        lcd.print("OPEN SEA");
+      } else if (millis() - enterCharybdis >=5000) { //time spent in state more than 5s
+        currentState = WRECKED;
+        digitalWrite(8, LOW);
+        lcd.clear();
+        lcd.setCursor(0,0);
+        lcd.print("WRECKED");
+       }
+      previousState = currentState;
+      lastButtonState = reading;
+      
+    break;
+    }
+    
+    case ANCHOR_DROPPED: {                            //ANCHOR DROPPED
+     int reading = digitalRead(7);
+      
+     if (reading == LOW && lastButtonState == HIGH) { //Button pressed
+       currentState = OPEN_SEA;
+       lcd.clear();
+       lcd.setCursor(0,0);
+       lcd.print("OPEN SEA");
+       }
+    
+      previousState = currentState;
+      lastButtonState = reading;
+      
+    
+    break;
+    }
+    
+    case WRECKED: {                                    //WRECKED
+      if (previousState != WRECKED) {
+       lcd.clear();
+       lcd.setCursor(0,0);
+       lcd.print("WRECKED");
+      }
+    
+    }
+    
+  } 
+}
