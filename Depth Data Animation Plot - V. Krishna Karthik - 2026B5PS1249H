@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
+
 df = pd.read_csv("Depth Data.csv") # builds a datatframe from the csv file
 print(df.head())      # first 5 rows
 print(df.dtypes)      # what type each column got detected as
@@ -15,20 +16,19 @@ df["Depth (m)"] = df["Depth (m)"].interpolate() # fill NaN values with interpola
 print(df.dtypes)
 print(df[df["Depth (m)"].isna()])   # shows which row(s) got turned into NaN
 
-plt.ion()
+smoothed = df["Depth (m)"].rolling(window=5, center=True, min_periods=1).mean() # calculate rolling mean with window size of 5
+
+from matplotlib.animation import FuncAnimation
+
 fig, ax = plt.subplots()
 
-xdata, ydata = [], []
-
-for i in range(len(df)):
-    xdata.append(df["Point"][i])
-    ydata.append(df["Depth (m)"][i])
-    ax.clear()
-    ax.plot(xdata, ydata)
-    ax.set_xlabel("Time (s)")
+def animate(i):
+    data = df.iloc[:i+1]  #slices your already-cleaned df up to row i
+    ax.clear()  #clears the axes
+    ax.plot(data["Point"], smoothed.iloc[:i+1])  #plots the sliced x and y
+    ax.set_xlabel("Time (s)")  #re-applies xlabel, ylabel, title (these get wiped by the clear!)
     ax.set_ylabel("Depth (m)")
     ax.set_title("Ship Depth Over Time")
-    plt.pause(1)
 
-plt.ioff()
+ani = FuncAnimation(fig, animate, frames=len(df), interval=1000, repeat=False)
 plt.show()
