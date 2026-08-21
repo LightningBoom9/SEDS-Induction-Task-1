@@ -1,0 +1,31 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+
+df = pd.read_csv("Depth Data.csv") # builds a datatframe from the csv file
+print(df.head())      # first 5 rows
+print(df.dtypes)      # what type each column got detected as
+
+df["Depth (m)"] = pd.to_numeric(df["Depth (m)"], errors="coerce") # convert to numeric, turn non-numeric into NaN
+window = df["Depth (m)"].rolling(window=5, center=True, min_periods=1).median()  # rolling median with window size of 5
+deviation = (df["Depth (m)"] - window).abs()  # absolute deviation from the rolling median
+df.loc[deviation > 50, "Depth (m)"] = pd.NA # replace outliers with NaN
+
+df["Depth (m)"] = df["Depth (m)"].interpolate() # fill NaN values with interpolated values
+
+print(df.dtypes)
+print(df[df["Depth (m)"].isna()])   # shows which row(s) got turned into NaN
+
+plt.plot(df["Point"], df["Depth (m)"])
+plt.xlabel("Time (s)")
+plt.ylabel("Depth (m)")
+plt.title("Ship Depth Over Time")
+
+smoothed = df["Depth (m)"].rolling(window=5, center=True, min_periods=1).mean() # calculate rolling mean with window size of 5
+
+plt.plot(df["Point"], df["Depth (m)"], alpha=0.4, label="Raw (cleaned)")
+plt.plot(df["Point"], smoothed, label="Smoothed")
+plt.xlabel("Time (s)")
+plt.ylabel("Depth (m)")
+plt.title("Ship Depth Over Time")
+plt.legend()
+plt.show() 
