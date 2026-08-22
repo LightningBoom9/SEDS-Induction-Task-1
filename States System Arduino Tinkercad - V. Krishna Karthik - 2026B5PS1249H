@@ -60,7 +60,7 @@ void loop()
         lcd.clear();
         lcd.setCursor(0,0);
         lcd.print("CHARYBDIS");
-      } else if (lightLevel < 1005) {             // light level below threshold
+      } else if (lightLevel < 505) {             // light level below threshold
         currentState = STORM;
         lcd.clear();
         lcd.setCursor(0,0);
@@ -100,7 +100,7 @@ void loop()
         lcd.clear();
         lcd.setCursor(0,0);
         lcd.print("ANCHOR DROPPED");
-      } else if (lightLevel >= 1005) { // Light level recovered
+      } else if (lightLevel >= 505) { // Light level recovered
         currentState = OPEN_SEA;
         digitalWrite(9, LOW);
         lcd.clear();
