@@ -1,8 +1,9 @@
-// Satyandra — BITS Pilani, Hyderabad Campus (add your ID number here)
+//Karthik — BITS Pilani, Hyderabad Campus (2026B5PS1249H)
 // Task 2: Keeping Watch Over Odysseus
 
-#include <LiquidCrystal.h>
-LiquidCrystal lcd(4, 3, 10, 11, 12, 13);   // RS, E, D4, D5, D6, D7
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+LiquidCrystal_I2C lcd(0x27, 16, 2);   // I2C address, columns, rows
 
 unsigned long previousBlinkTime = 0;       // GLOBALS
 const long blinkInterval = 500;
@@ -25,8 +26,10 @@ void setup()
   pinMode(7, INPUT_PULLUP); // Button
   pinMode(6, OUTPUT);   // Ultrasonic Trig
   pinMode(5, INPUT);    // Ultrasonic Echo
+  
 
-  lcd.begin(16, 2);
+  lcd.init();
+  lcd.backlight();
   lcd.setCursor(0, 0);
   lcd.print("OPEN SEA");
 }
